@@ -7,4 +7,4 @@ curl -s "$url/photo.jpg" -o A.jpg
 sleep 2
 curl -s "$url/photo.jpg" -o B.jpg
 #curl -X POST "$url/disabletorch"
-python count_ants.py A.jpg B.jpg
+./build/count_ants A.jpg B.jpg
