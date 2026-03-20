@@ -1,0 +1,27 @@
+crop:
+  x: 600
+  y: 600
+  width: 1150
+  height: 250
+
+motion_filter:
+  gaussian_kernel: 3
+  gaussian_sigma: 0 #Automatically calculated based on kernel size
+  intensity_threshold: 50
+
+color_filter:
+  color_threshold: 70
+  dilate_kernel: 3
+  dilate_iterations: 1
+  contour_area_max: 30
+
+contour_filter:
+  area_min: 6
+  area_max: 30
+
+blur_filter:
+  variance_threshold: 35
+
+classify:
+  some_ants_threshold: 1
+  many_ants_threshold: 4
