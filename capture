@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+#dir="./"
+url="http://192.168.1.209:8080"
+#curl -X POST "$url/enabletorch"
+#f=$(date +"%y%m%d_%H%M")
+curl -s "$url/photo.jpg" -o A.jpg
+sleep 2
+curl -s "$url/photo.jpg" -o B.jpg
+#curl -X POST "$url/disabletorch"
+python count_ants.py A.jpg B.jpg
