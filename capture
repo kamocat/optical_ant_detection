@@ -7,4 +7,8 @@ curl -s "$url/photo.jpg" -o A.jpg
 sleep 2
 curl -s "$url/photo.jpg" -o B.jpg
 #curl -X POST "$url/disabletorch"
-./build/count_ants A.jpg B.jpg
+if [ -x ./build/count_ants ]; then
+	./build/count_ants A.jpg B.jpg
+else
+	count_ants A.jpg B.jpg
+fi
