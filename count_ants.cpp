@@ -78,7 +78,7 @@ Config load_config(const std::filesystem::path& config_path) {
     return config;
 }
 
-cv::Mat crop_image(const std::string& file, const Config& config) {
+cv::Mat crop_image(const std::string& file, const Config& config, bool verbose, const std::string& tag) {
     cv::Mat image = cv::imread(file);
     if (image.empty()) {
         throw std::runtime_error("Failed to read image: " + file);
@@ -91,10 +91,15 @@ cv::Mat crop_image(const std::string& file, const Config& config) {
 
     cv::Mat cropped = image(roi).clone();
     cropped.convertTo(cropped, CV_32FC3);
+    if (verbose) {
+        cv::Mat vis;
+        cropped.convertTo(vis, CV_8UC3);
+        cv::imwrite("verbose_crop_" + tag + ".jpg", vis);
+    }
     return cropped;
 }
 
-cv::Mat motion_filter(const cv::Mat& a, const cv::Mat& b, const Config& config) {
+cv::Mat motion_filter(const cv::Mat& a, const cv::Mat& b, const Config& config, bool verbose) {
     int k = config.motion_filter.gaussian_kernel;
     if (k % 2 == 0) {
         k += 1;
@@ -114,13 +119,10 @@ cv::Mat motion_filter(const cv::Mat& a, const cv::Mat& b, const Config& config) 
     diff = cv::max(diff, channels[1]);
     diff = cv::max(diff, channels[2]);
 
-    double max_val = 0.0;
-    cv::minMaxLoc(diff, nullptr, &max_val);
-    if (max_val > config.motion_filter.intensity_threshold) {
-        diff = diff * (255.0 / max_val);
-    }
-
     diff.convertTo(diff, CV_8U);
+    if (verbose) {
+        cv::imwrite("verbose_diff.png", diff);
+    }
 
     cv::Mat tdiff;
     double tval = cv::threshold(diff, tdiff, 0, 255, cv::THRESH_TRIANGLE | cv::THRESH_BINARY);
@@ -130,10 +132,13 @@ cv::Mat motion_filter(const cv::Mat& a, const cv::Mat& b, const Config& config) 
 
     cv::Mat out;
     cv::threshold(diff, out, tval, 255, cv::THRESH_BINARY);
+    if (verbose) {
+        cv::imwrite("verbose_diff_thresholded.png", out);
+    }
     return out;
 }
 
-cv::Mat color_filter(const cv::Mat& a, const cv::Mat& b, const Config& config) {
+cv::Mat color_filter(const cv::Mat& a, const cv::Mat& b, const Config& config, bool verbose) {
     cv::Mat burn;
     cv::min(a, b, burn);
     burn.convertTo(burn, CV_8UC3);
@@ -147,10 +152,17 @@ cv::Mat color_filter(const cv::Mat& a, const cv::Mat& b, const Config& config) {
 
     cv::threshold(thresh, thresh, config.color_filter.color_threshold, 255, cv::THRESH_BINARY);
     cv::bitwise_not(thresh, thresh);
+    if (verbose) {
+        cv::imwrite("verbose_color.png", thresh);
+    }
 
     int kernel_size = config.color_filter.dilate_kernel;
     cv::Mat kernel = cv::Mat::ones(kernel_size, kernel_size, CV_8U);
     cv::dilate(thresh, thresh, kernel, cv::Point(-1, -1), config.color_filter.dilate_iterations);
+
+    if (verbose) {
+        cv::imwrite("verbose_color_dilated.png", thresh);
+    }
 
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(thresh, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
@@ -169,11 +181,13 @@ cv::Mat color_filter(const cv::Mat& a, const cv::Mat& b, const Config& config) {
     if (!hulls.empty()) {
         cv::fillPoly(filled, hulls, cv::Scalar(255), cv::LINE_4);
     }
-
+    if (verbose) {
+        cv::imwrite("verbose_color_pruned.png", filled);
+    }
     return filled;
 }
 
-int contour_filter(const cv::Mat& thresh, const cv::Mat& diff, const Config& config) {
+int contour_filter(const cv::Mat& thresh, const cv::Mat& diff, const Config& config, bool verbose) {
     cv::Mat img;
     cv::bitwise_and(thresh, diff, img);
 
@@ -181,16 +195,24 @@ int contour_filter(const cv::Mat& thresh, const cv::Mat& diff, const Config& con
     cv::findContours(img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
     int ants = 0;
+    std::vector<std::vector<cv::Point>> matched;
     for (const auto& contour : contours) {
         double area = cv::contourArea(contour);
         if (area >= config.contour_filter.area_min && area <= config.contour_filter.area_max) {
             ants += 1;
+            if (verbose) matched.push_back(contour);
         }
+    }
+    if (verbose) {
+        cv::Mat vis;
+        cv::cvtColor(img, vis, cv::COLOR_GRAY2BGR);
+        cv::drawContours(vis, matched, -1, cv::Scalar(0, 0, 255), 1);
+        cv::imwrite("verbose_contours.png", vis);
     }
     return ants;
 }
 
-bool blur_filter(const cv::Mat& image, const Config& config) {
+bool blur_filter(const cv::Mat& image, const Config& config, bool verbose) {
     cv::Mat laplacian;
     cv::Laplacian(image, laplacian, CV_32F);
 
@@ -199,40 +221,54 @@ bool blur_filter(const cv::Mat& image, const Config& config) {
     cv::meanStdDev(laplacian, mean, stddev);
     double variance = stddev[0] * stddev[0];
 
+    if (verbose) {
+        cv::Mat vis;
+        cv::normalize(laplacian, vis, 0, 255, cv::NORM_MINMAX, CV_8U);
+        cv::imwrite("verbose_laplacian.jpg", vis);
+        std::cerr << "blur variance: " << variance
+                  << " (threshold: " << config.blur_filter.variance_threshold << ")\n";
+    }
     return variance <= config.blur_filter.variance_threshold;
 }
 
-int classify(const std::string& file1, const std::string& file2, const Config& config) {
-    cv::Mat a = crop_image(file1, config);
-    cv::Mat b = crop_image(file2, config);
+int classify(const std::string& file1, const std::string& file2, const Config& config, bool verbose) {
+    cv::Mat a = crop_image(file1, config, verbose, "a");
+    cv::Mat b = crop_image(file2, config, verbose, "b");
 
-    if (blur_filter(a, config)) {
-        return 0;
+    if (blur_filter(a, config, verbose)) {
+        return -1;
     }
 
-    cv::Mat diff = motion_filter(a, b, config);
-    cv::Mat thresh = color_filter(a, b, config);
-    int ants = contour_filter(thresh, diff, config);
-
+    cv::Mat diff = motion_filter(a, b, config, verbose);
+    cv::Mat thresh = color_filter(a, b, config, verbose);
+    int ants = contour_filter(thresh, diff, config, verbose);
+    /*
     if (ants < config.classify.some_ants_threshold) {
         return 1;
     }
     if (ants < config.classify.many_ants_threshold) {
         return 2;
     }
-    return 3;
+    */
+    return ants;
 }
 
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        std::cerr << "Usage: count_ants <file1> <file2>" << std::endl;
+    bool verbose = false;
+    int first_arg = 1;
+    if (argc > 1 && std::string(argv[1]) == "-v") {
+        verbose = true;
+        first_arg = 2;
+    }
+    if (argc - first_arg != 2) {
+        std::cerr << "Usage: count_ants [-v] <file1> <file2>" << std::endl;
         return 1;
     }
 
     try {
         const std::filesystem::path config_path = "config.yaml";
         Config config = load_config(config_path);
-        int ants = classify(argv[1], argv[2], config);
+        int ants = classify(argv[first_arg], argv[first_arg + 1], config, verbose);
         std::cout << ants << std::endl;
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
