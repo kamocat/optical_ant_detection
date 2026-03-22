@@ -78,8 +78,8 @@ RUN apk add --no-cache curl
 
 COPY --from=builder /src/build/count_ants /usr/local/bin/count_ants
 COPY --from=builder /src/config.yaml /app/config.yaml
-COPY --from=builder /src/capture /app/capture
+COPY --from=builder /src/antcam /app/antcam
 
-RUN chmod +x /app/capture
+RUN chmod +x /app/antcam
 
-CMD ["/app/capture"]
+CMD ["/app/antcam"]
