@@ -2,3 +2,6 @@ build/
 .vscode
 
 *.jpg
+
+# MQTT credentials - copy mqtt.env.example and fill in, do not commit
+mqtt.env

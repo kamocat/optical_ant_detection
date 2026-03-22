@@ -1,0 +1,24 @@
+{
+    "dev": {
+        "mdl": "optical-ant-sensor",
+        "sw": "0.1.0",
+        "ids": ["my_ant_sensor_1"],
+        "name": "ants",
+        "mf": "docker"
+    },
+    "qos": 2,
+    "state_topic": "home/kitchen/ants",
+    "o": {
+        "name": "Optical Ant Sensor",
+        "sw": "0.1.0"
+    },
+    "cmps": {
+        "my_ant_sensor_1a": {
+            "name": "ants",
+            "p": "sensor",
+            "unique_id": "my_ant_sensor_1a",
+            "unit_of_measurement": "ants",
+            "state_class": "measurement"
+        }
+    }
+}

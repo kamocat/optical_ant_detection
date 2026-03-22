@@ -74,7 +74,7 @@ FROM alpine:3.21 AS runtime
 
 WORKDIR /app
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl mosquitto-clients
 
 COPY --from=builder /src/build/count_ants /usr/local/bin/count_ants
 COPY --from=builder /src/config.yaml /app/config.yaml

@@ -1,5 +1,8 @@
 [Unit]
 Description=Count the number of ants in view
+
 [Service]
 Type=oneshot
+WorkingDirectory=/app
+EnvironmentFile=-/etc/antcam/mqtt.env
 ExecStart=/app/antcam
