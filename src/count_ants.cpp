@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
     }
 
     try {
-        const std::filesystem::path config_path = "config.yaml";
+        const std::filesystem::path config_path = "config/config.yaml";
         Config config = load_config(config_path);
         int ants = classify(argv[first_arg], argv[first_arg + 1], config, verbose);
         std::cout << ants << std::endl;

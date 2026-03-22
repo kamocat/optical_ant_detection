@@ -1,0 +1,75 @@
+#!/usr/bin/env ash
+# Publishes a count to MQTT and/or ntfy.
+# Usage: notify <count>
+#   count  — integer returned by count_ants; -1 means blurry/skip
+
+COUNT="$1"
+
+# ── MQTT configuration ───────────────────────────────────────────────────────
+MQTT_HOST="${MQTT_HOST:-192.168.1.10}"
+MQTT_PORT="${MQTT_PORT:-1883}"
+MQTT_USER="${MQTT_USER:-}"
+MQTT_PASS="${MQTT_PASS:-}"
+MQTT_TOPIC="${MQTT_TOPIC:-home/kitchen/ants}"
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── ntfy configuration ───────────────────────────────────────────────────────
+# Leave NTFY_URL/NTFY_TOPIC empty to disable ntfy notifications.
+NTFY_URL="${NTFY_URL:-}"
+NTFY_TOPIC="${NTFY_TOPIC:-}"
+NTFY_THRESHOLD="${NTFY_THRESHOLD:-1}"
+NTFY_TOKEN="${NTFY_TOKEN:-}"
+NTFY_USER="${NTFY_USER:-}"
+NTFY_PASS="${NTFY_PASS:-}"
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Publish to MQTT; skip if the image was too blurry (count == -1)
+if [ "$COUNT" -ge 0 ] 2>/dev/null; then
+    mosquitto_pub \
+        -h "$MQTT_HOST" \
+        -p "$MQTT_PORT" \
+        -u "$MQTT_USER" \
+        -P "$MQTT_PASS" \
+        -t "$MQTT_TOPIC" \
+        -m "$COUNT" \
+        -q 1
+fi
+
+# Publish to ntfy; only if configured and count >= threshold
+if [ -n "$NTFY_URL" ] && [ -n "$NTFY_TOPIC" ] && [ "$COUNT" -ge "$NTFY_THRESHOLD" ] 2>/dev/null; then
+    # Priority escalates with count
+    if [ "$COUNT" -ge 10 ]; then
+        NTFY_PRIORITY="high"
+    elif [ "$COUNT" -ge 3 ]; then
+        NTFY_PRIORITY="default"
+    else
+        NTFY_PRIORITY="low"
+    fi
+
+    NTFY_MSG="${COUNT} ant$([ "$COUNT" -ne 1 ] && printf 's') detected"
+
+    if [ -n "$NTFY_TOKEN" ]; then
+        curl -s \
+            -H "Title: Ant Alert" \
+            -H "Priority: ${NTFY_PRIORITY}" \
+            -H "Tags: ant" \
+            -H "Authorization: Bearer ${NTFY_TOKEN}" \
+            -d "$NTFY_MSG" \
+            "${NTFY_URL}/${NTFY_TOPIC}" > /dev/null
+    elif [ -n "$NTFY_USER" ]; then
+        curl -s \
+            -H "Title: Ant Alert" \
+            -H "Priority: ${NTFY_PRIORITY}" \
+            -H "Tags: ant" \
+            -u "${NTFY_USER}:${NTFY_PASS}" \
+            -d "$NTFY_MSG" \
+            "${NTFY_URL}/${NTFY_TOPIC}" > /dev/null
+    else
+        curl -s \
+            -H "Title: Ant Alert" \
+            -H "Priority: ${NTFY_PRIORITY}" \
+            -H "Tags: ant" \
+            -d "$NTFY_MSG" \
+            "${NTFY_URL}/${NTFY_TOPIC}" > /dev/null
+    fi
+fi

@@ -1,39 +1,9 @@
 #!/usr/bin/env ash
+# Entry point — orchestrates capture → notify.
+# Env vars (MQTT_*, NTFY_*, CAM_URL) are picked up by the child scripts.
 
-# ── MQTT configuration ───────────────────────────────────────────────────────
-# Values here are defaults; override by setting env vars before running or by
-# bind-mounting a file that exports them.
-MQTT_HOST="${MQTT_HOST:-192.168.1.10}"
-MQTT_PORT="${MQTT_PORT:-1883}"
-MQTT_USER="${MQTT_USER:-esp32}"
-MQTT_PASS="${MQTT_PASS:-speedisnoteverything}"
-MQTT_TOPIC="${MQTT_TOPIC:-home/kitchen/ants}"
-# ─────────────────────────────────────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-CAM_URL="${CAM_URL:-http://192.168.1.209:8080}"
-
-#curl -X POST "$CAM_URL/enabletorch"
-curl -s "$CAM_URL/photo.jpg" -o A.jpg
-sleep 2
-curl -s "$CAM_URL/photo.jpg" -o B.jpg
-#curl -X POST "$CAM_URL/disabletorch"
-
-if [ -x ./build/count_ants ]; then
-    COUNT=$(./build/count_ants A.jpg B.jpg)
-else
-    COUNT=$(count_ants A.jpg B.jpg)
-fi
-
+COUNT=$("$SCRIPT_DIR/capture")
 echo "$COUNT"
-
-# Publish to MQTT; skip if the image was too blurry (count == -1)
-if [ "$COUNT" -ge 0 ] 2>/dev/null; then
-    mosquitto_pub \
-        -h "$MQTT_HOST" \
-        -p "$MQTT_PORT" \
-        -u "$MQTT_USER" \
-        -P "$MQTT_PASS" \
-        -t "$MQTT_TOPIC" \
-        -m "$COUNT" \
-        -q 1
-fi
+"$SCRIPT_DIR/notify" "$COUNT"

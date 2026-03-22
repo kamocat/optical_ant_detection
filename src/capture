@@ -1,0 +1,20 @@
+#!/usr/bin/env ash
+# Fetches two frames from the camera, runs count_ants, and prints the count.
+# Designed to be called by antcam; outputs a single integer to stdout.
+
+CAM_URL="${CAM_URL:-http://192.168.1.209:8080}"
+
+#curl -X POST "$CAM_URL/enabletorch"
+curl -s "$CAM_URL/photo.jpg" -o A.jpg
+sleep 2
+curl -s "$CAM_URL/photo.jpg" -o B.jpg
+#curl -X POST "$CAM_URL/disabletorch"
+
+if [ -x "$(dirname "$0")/../build/count_ants" ]; then
+    # Local dev: prefer a build/ sibling of the project root
+    "$(dirname "$0")/../build/count_ants" A.jpg B.jpg
+elif [ -x ./build/count_ants ]; then
+    ./build/count_ants A.jpg B.jpg
+else
+    count_ants A.jpg B.jpg
+fi

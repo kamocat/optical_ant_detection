@@ -1,0 +1,38 @@
+#!/sbin/openrc-run
+# OpenRC service for antcam — runs once on demand or at boot.
+# Periodic execution is handled separately by crond (see antcam.cron).
+#
+# Install:
+#   install -m755 antcam /etc/init.d/antcam
+#   rc-update add antcam default          # run once at every boot
+#   rc-service antcam start               # run once now
+
+description="Count the number of ants in view"
+
+# Working directory — must match where antcam looks for config.yaml
+: "${ANTCAM_DIR:=/app}"
+: "${ANTCAM_BIN:=/app/antcam}"
+: "${ANTCAM_MQTT_ENV:=/etc/antcam/mqtt.env}"
+: "${ANTCAM_NTFY_ENV:=/etc/antcam/ntfy.env}"
+
+depend() {
+    need net
+    after bootmisc
+}
+
+start() {
+    ebegin "Running antcam"
+
+    # Source credential files if present (same pattern as the systemd EnvironmentFile=)
+    [ -f "$ANTCAM_MQTT_ENV" ] && . "$ANTCAM_MQTT_ENV"
+    [ -f "$ANTCAM_NTFY_ENV" ] && . "$ANTCAM_NTFY_ENV"
+
+    ( cd "$ANTCAM_DIR" && "$ANTCAM_BIN" )
+    eend $?
+}
+
+# antcam is a oneshot command — nothing to stop
+stop() {
+    ebegin "antcam is oneshot, nothing to stop"
+    eend 0
+}

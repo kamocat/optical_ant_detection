@@ -1,0 +1,15 @@
+# antcam crontab — periodic ant detection
+# Drop this file into /etc/cron.d/antcam and ensure crond is running:
+#
+#   install -m644 antcam.cron /etc/cron.d/antcam
+#   rc-update add crond default
+#   rc-service crond start
+#
+# Format: m  h  dom  mon  dow  user  command
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Run 5 minutes after every boot (mirrors systemd OnBootSec=5min)
+@reboot root sleep 300 && cd /app && /app/antcam
+
+# Run every 30 minutes thereafter (mirrors systemd OnUnitActiveSec=30min)
+*/30 * * * *  root  cd /app && /app/antcam

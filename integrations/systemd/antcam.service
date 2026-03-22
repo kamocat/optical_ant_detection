@@ -5,4 +5,5 @@ Description=Count the number of ants in view
 Type=oneshot
 WorkingDirectory=/app
 EnvironmentFile=-/etc/antcam/mqtt.env
+EnvironmentFile=-/etc/antcam/ntfy.env
 ExecStart=/app/antcam

@@ -3,5 +3,6 @@ build/
 
 *.jpg
 
-# MQTT credentials - copy mqtt.env.example and fill in, do not commit
+# Credentials - copy *.env.example and fill in, do not commit
 mqtt.env
+ntfy.env

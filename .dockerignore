@@ -1,6 +1,10 @@
 .git
 .gitignore
-build
+build/
+tests/
 *.pyc
 __pycache__
 *.jpg
+# Credentials — never bake into image
+mqtt.env
+ntfy.env

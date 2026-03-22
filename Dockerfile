@@ -60,7 +60,9 @@ RUN cmake -S "yaml-cpp-${YAML_VERSION}" -B /work/yaml-build \
     && cmake --build /work/yaml-build -j"$(nproc)" \
     && cmake --install /work/yaml-build
 
-COPY . /src
+# Copy only what the C++ build needs
+COPY CMakeLists.txt /src/CMakeLists.txt
+COPY src/count_ants.cpp /src/src/count_ants.cpp
 
 RUN cmake -S /src -B /src/build \
         -DCMAKE_BUILD_TYPE=Release \
@@ -77,9 +79,9 @@ WORKDIR /app
 RUN apk add --no-cache curl mosquitto-clients
 
 COPY --from=builder /src/build/count_ants /usr/local/bin/count_ants
-COPY --from=builder /src/config.yaml /app/config.yaml
-COPY --from=builder /src/antcam /app/antcam
+COPY config/config.yaml       /app/config/config.yaml
+COPY src/antcam src/capture src/notify /app/
 
-RUN chmod +x /app/antcam
+RUN chmod +x /app/antcam /app/capture /app/notify
 
 CMD ["/app/antcam"]

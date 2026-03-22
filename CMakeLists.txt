@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs)
 find_package(yaml-cpp REQUIRED)
 
-add_executable(count_ants count_ants.cpp)
+add_executable(count_ants src/count_ants.cpp)
 
 target_link_libraries(count_ants PRIVATE ${OpenCV_LIBS})
 
