@@ -1,0 +1,16 @@
+services:
+  antcam:
+    build: .
+    env_file:
+      - path: ./integrations/homeassistant/mqtt.env
+        required: false
+      - path: ./integrations/ntfy/ntfy.env
+        required: false
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml:ro
+    command: >
+      sh -c "printenv | sed 's/=\(.*\)/=\"\1\"/' > /etc/environment &&
+             echo '*/5 * * * * . /etc/environment && cd /app && /app/antcam >> /proc/1/fd/1 2>&1' > /etc/crontabs/root &&
+             /app/antcam >> /proc/1/fd/1 2>&1 ;
+             crond -f -l 6"
+    restart: unless-stopped

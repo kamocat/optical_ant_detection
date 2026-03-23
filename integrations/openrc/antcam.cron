@@ -8,8 +8,8 @@
 # Format: m  h  dom  mon  dow  user  command
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Run 5 minutes after every boot (mirrors systemd OnBootSec=5min)
-@reboot root sleep 300 && cd /app && /app/antcam
+# Run 30 seeconds after every boot
+@reboot root sleep 30 && cd /app && /app/antcam
 
-# Run every 30 minutes thereafter (mirrors systemd OnUnitActiveSec=30min)
-*/30 * * * *  root  cd /app && /app/antcam
+# Run every 5 minutes thereafter
+*/5 * * * *  root  cd /app && /app/antcam

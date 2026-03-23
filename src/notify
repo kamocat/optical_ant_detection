@@ -1,17 +1,12 @@
-#!/usr/bin/env ash
+#!/usr/bin/env sh
 # Publishes a count to MQTT and/or ntfy.
 # Usage: notify <count>
 #   count  — integer returned by count_ants; -1 means blurry/skip
 
 COUNT="$1"
 
-# ── MQTT configuration ───────────────────────────────────────────────────────
-MQTT_HOST="${MQTT_HOST:-192.168.1.10}"
-MQTT_PORT="${MQTT_PORT:-1883}"
-MQTT_USER="${MQTT_USER:-}"
-MQTT_PASS="${MQTT_PASS:-}"
-MQTT_TOPIC="${MQTT_TOPIC:-home/kitchen/ants}"
-# ─────────────────────────────────────────────────────────────────────────────
+# Source MQTT configuration from mqtt.env if it exists
+[ -f "mqtt.env" ] && . ./mqtt.env
 
 # ── ntfy configuration ───────────────────────────────────────────────────────
 # Leave NTFY_URL/NTFY_TOPIC empty to disable ntfy notifications.
